@@ -1,26 +1,29 @@
 ###
-# Setup script for fetching, building, starting & loading example data into a Dockerized version of SQl Server
+# Setup script for SQL Server 2019 in Docker
+# This will build the database, start it up, and load up example data
 ###
 
-# Get the container from Dockerhub
+# Get the MSSQL 2019 image from Dockerhub
 docker pull mcr.microsoft.com/mssql/server:2019-latest
 
-# Set a password to use
+# Set a password to use for this database (note: change me!)
 USER_PASSWORD=YourStrong@Passw0rd
 
-# start it UP, bound to port 1433
+# Create the MSSQL container and run it, bound to port 1433
 docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=$USER_PASSWORD" \
    -p 1433:1433 --name sql1 \
    -d mcr.microsoft.com/mssql/server:2019-latest
 
-# check that its all running
-docker ps -a
+# Check that the container is running (should see 'sql1' status as Up)
+docker ps
 
-# connect and open up sql command line via interactive bash
+# Connect to the running container and open up sql command line via interactive bash
 docker exec -it sql1 "bash"
 
-# then start the server it
-/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "$USER_PASSWORD"
+# Finally, start up the database itself
+/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P YourStrong@Passw0rd
+
+
 
 # worked?
 CREATE DATABASE TestDB
@@ -35,11 +38,11 @@ GO
 SELECT * FROM Inventory WHERE quantity > 152;
 GO
 
-
 QUIT
 
-# Find IP address of running container (whre container id is int herE)
+# Find IP address of running container (where the container id is int herE)
 docker inspect --format '{{ .NetworkSettings.IPAddress }}' $(docker container ls -q --filter name="sql1")
+
 
 USE [TestDB] RESTORE DATABASE [AdventureWorks2017] FROM 
 DISK = '/Users/Andy_iMac/Downloads/AdventureWorks2017.bak' WITH FILE = 1, NOUNLOAD, REPLACE, STATS = 10
@@ -55,11 +58,3 @@ GO
 docker exec -it sql1 /opt/mssql-tools/bin/sqlcmd \
    -S localhost -U SA -P "$USER_PASSWORD" \
    -Q 'RESTORE DATABASE AdventureWorks2017 FROM DISK = "/var/opt/mssql/backup/AdventureWorks2017.bak" WITH MOVE "AdventureWorks2017_log" TO "/var/opt/mssql/data/AdventureWorks2017_log.ldf", MOVE "AdventureWorks2017" TO "/var/opt/mssql/data/AdventureWorks2017"'
-
-
-
-
-# https://docs.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver15
-# https://stackoverflow.com/questions/887370/sql-server-extract-table-meta-data-description-fields-and-their-data-types
-# https://docs.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver15&pivots=cs1-bash
-# Rsources: https://docs.microsoft.com/en-us/sql/samples/adventureworks-install-configure?view=sql-server-ver15
